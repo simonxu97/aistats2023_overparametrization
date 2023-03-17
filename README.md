@@ -1,4 +1,2 @@
-In main.py, function 'train_over()' is to reproduce training error in Section 4.1. After training, the loss is saved, 
-then use 'plot_train()' in plot.py to produce the plot.  
-Function 'compare_diff_lr' is to reproduce training error in Section 4.2. After training, the loss is saved, 
-then use 'plot_compare_rate()' in plot.py to produce the plot.  
+To reproduce the simulations results in Section 4.1, use function 'train_over()' in main.py.
+To reproduce the simulations results in Section 4.2, use function 'compare_diff_lr()' in main.py.
