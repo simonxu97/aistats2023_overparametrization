@@ -26,8 +26,11 @@ def c(x):
     return (np.linalg.norm(x, ord=2) / np.linalg.norm(x, ord=-2)) ** 2
 
 
-def p1(x, y, u, v):
-    return np.max([np.linalg.norm(y, ord=-2) - np.linalg.norm(e(x, y, u, v), 'fro'), 0]) / np.linalg.norm(x, ord=2)
+def p1(x, y, u, v, idx):
+    if idx > np.min([y.shape[0], y.shape[1]]):
+        return 0.0
+    else:
+        return np.max([np.linalg.norm(y, ord=-2) - np.linalg.norm(e(x, y, u, v), 'fro'), 0]) / np.linalg.norm(x, ord=2)
 
 
 def p2(x, y, u, v):
@@ -51,7 +54,8 @@ def beta(x, y, u, v):
 def alpha(x, y, u, v):
     r = np.linalg.matrix_rank(x)
     m = v.shape[1]
-    p = p1(x, y, u, v)
+    pm = p1(x, y, u, v, m)
+    pr = p1(x, y, u, v, r)
     imbalance = d(u, v)
     w = scipy.linalg.eigh(imbalance, eigvals_only=True)
     w = -np.sort(-w)
@@ -62,8 +66,8 @@ def alpha(x, y, u, v):
     delta1 = np.max([w[0], 0]) - np.max([w[r-1], 0])
     delta2 = np.max([w_neg[0], 0]) - np.max([w_neg[m-1], 0])
     delta3 = np.max([w[r-1], 0]) + np.max([w_neg[m-1], 0])
-    ret1 = -delta1+np.sqrt((delta1+delta3)**2+4*p**2)
-    ret2 = -delta2+np.sqrt((delta2+delta3)**2+4*p**2)
+    ret1 = -delta1+np.sqrt((delta1+delta3)**2+4*pm**2)
+    ret2 = -delta2+np.sqrt((delta2+delta3)**2+4*pr**2)
     return (ret1 + ret2) / 2
 
 
@@ -71,9 +75,13 @@ def a1(x, alpha_value, c2):
     return 2 * alpha_value * c2 * np.linalg.norm(x, ord=-2) ** 2
 
 
-def a2(x, y, u, v, c1, beta_value, p2_value):
-    return np.sqrt(8) * p2_value* np.sqrt(loss(x, y, u, v)) * np.linalg.norm(x, ord=2) * np.linalg.norm(x, ord=-2) ** 2 \
-           + c(x) * beta_value ** 2 * c1 ** 2 * np.linalg.norm(x, ord=-2) ** 4
+def a2(x, y, u, v, c1, beta_value, p2_value, version):
+    if version == 'aistats':
+        return np.sqrt(8) * p2_value * np.sqrt(loss(x, y, u, v)) * np.linalg.norm(x, ord=2) * np.linalg.norm(x, ord=-2) ** 2 \
+               + c(x) * beta_value ** 2 * c1 ** 2 * np.linalg.norm(x, ord=-2) ** 4
+    else:
+        return np.sqrt(8) * p2_value * np.sqrt(loss(x, y, u, v)) * np.linalg.norm(x, ord=2) * np.linalg.norm(x, ord=-2) ** 2 \
+               + c(x) * beta_value ** 2 * c1 ** 2 * np.linalg.norm(x, ord=-2) ** 4
 
 
 def a3(x, y, u, v, c1, beta_value, p2_value):
@@ -93,21 +101,7 @@ def target(eta, x, y, u, v, alpha_value, beta_value, p2_value, c1=1.0, c2=1.0):
     return poly
 
 
-def new_rate_smooth(eta, x, y, u, v):
-    max_sig_w1 = np.linalg.norm(u, ord=2)
-    max_sig_w2 = np.linalg.norm(v, ord=2)
-    min_sig_w1 = np.linalg.norm(u, ord=-2)
-    min_sig_w2 = np.linalg.norm(v, ord=-2)
-    min_sig_x = np.linalg.norm(x, ord=-2)
-    max_sig_x = np.linalg.norm(x, ord=2)
-    rate = 1 - 2 * eta * (min_sig_w1**2 + min_sig_w2**2) * min_sig_x ** 2 \
-            + np.sqrt(8) * eta ** 2 * min_sig_x**2 * max_sig_x * np.sqrt(loss(x, y, u, v)) * np.linalg.norm(u.dot(v), 'fro') \
-            + eta ** 2 * min_sig_x ** 2 * max_sig_x ** 2 * (max_sig_w1 ** 2 + max_sig_w2 ** 2
-                                                            + np.sqrt(2*loss(x, y, u, v)) * eta * np.linalg.norm(u.dot(v), 'fro') * max_sig_x) ** 2
-    return rate
-
-
-def find_lr(x, y, u, v, c1, c2, u_initial, v_initial, version):
+def find_lr(x, y, u, v, c1, c2, u_initial, v_initial, version, alpha_0=0.0, beta_0=0.0, p2_0=0.0, constraint=True):
 
     if version == 'rho_hat':
         alpha_t = alpha(x, y, u, v)
@@ -119,8 +113,16 @@ def find_lr(x, y, u, v, c1, c2, u_initial, v_initial, version):
                           -a1(x, alpha_t, 1.0)])
 
     elif version == 'rho':
-        alpha_t = np.linalg.norm(u, ord=-2) ** 2 + np.linalg.norm(v, ord=-2) ** 2
-        beta_t = np.linalg.norm(u, ord=2) ** 2 + np.linalg.norm(v, ord=2) ** 2
+        r = np.linalg.matrix_rank(x)
+        m = v.shape[1]
+        u1 = u.dot(u.T)
+        v1 = v.T.dot(v)
+        eigen_u1 = scipy.linalg.eigvals(u1)
+        eigen_u1 = np.real(-np.sort(-eigen_u1))
+        eigen_v1 = scipy.linalg.eigvals(v1)
+        eigen_v1 = np.real(-np.sort(-eigen_v1))
+        alpha_t = eigen_u1[r-1]+eigen_v1[m-1]
+        beta_t = np.linalg.norm(u, ord=2) ** 2 + np.linalg.norm(v, ord=2)
         p2_t = np.linalg.norm(u.dot(v), ord=2)
         roots = np.roots([4 * a4(x, y, u, v, p2_t),
                           3 * a3(x, y, u, v, 1.0, beta_t, p2_t),
@@ -128,10 +130,12 @@ def find_lr(x, y, u, v, c1, c2, u_initial, v_initial, version):
                           -a1(x, alpha_t, 1.0)])
 
     else:
-        alpha_0 = c2 * alpha(x, y, u_initial, v_initial)
-        beta_0 = c1 * beta(x, y, u_initial, v_initial)
-        p2_0 = p2(x, y, u_initial, v_initial)
+        roots = np.roots([4 * a4(x, y, u, v, p2_0),
+                          3 * a3(x, y, u, v, c1, beta_0, p2_0),
+                          2 * a2(x, y, u, v, c1, beta_0, p2_0),
+                          -a1(x, alpha_0, c2)])
 
+    if constraint:
         roots_g1 = np.roots([a4(x, y, u_initial, v_initial, p2_0),
                              a3(x, y, u_initial, v_initial, c1, beta_0, p2_0),
                              a2(x, y, u_initial, v_initial, c1, beta_0, p2_0) + (
@@ -141,16 +145,9 @@ def find_lr(x, y, u, v, c1, c2, u_initial, v_initial, version):
         roots_g2 = np.roots([a4(x, y, u_initial, v_initial, p2_0),
                              a3(x, y, u_initial, v_initial, c1, beta_0, p2_0),
                              a2(x, y, u_initial, v_initial, c1, beta_0, p2_0) + (
-                                         8 * c1 * beta(x, y, u_initial, v_initial) * loss(x, y, u_initial,
-                                                                                          v_initial) * np.linalg.norm(x,
-                                                                                                                      ord=2) ** 2) / (
-                                         (1 - c2) * alpha(x, y, u_initial, v_initial)),
+                                         8 * c1 * beta_0 * loss(x, y, u_initial, v_initial) * np.linalg.norm(x, ord=2) ** 2) / (
+                                         (1 - c2) * alpha_0),
                              -a1(x, alpha_0, c2)])
-        roots = np.roots([4 * a4(x, y, u, v, p2_0),
-                          3 * a3(x, y, u, v, c1, beta_0, p2_0),
-                          2 * a2(x, y, u, v, c1, beta_0, p2_0),
-                          -a1(x, alpha_0, c2)])
-
         for i in roots_g1:
             if np.isreal(i) == False:
                 pass
@@ -166,13 +163,11 @@ def find_lr(x, y, u, v, c1, c2, u_initial, v_initial, version):
     for i in roots:
         if np.isreal(i) == False:
             pass
+        elif i < 0:
+            pass
         else:
             r1 = np.real(i)
-
-    # print(r1, r2, r3)
-    # exit()
-    # print(np.min([r1, r2, r3]))
-    if version == 'f':
+    if constraint:
         return np.min([r1, r2, r3])
     else:
         return r1
