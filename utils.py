@@ -75,21 +75,34 @@ def a1(x, alpha_value, c2):
     return 2 * alpha_value * c2 * np.linalg.norm(x, ord=-2) ** 2
 
 
-def a2(x, y, u, v, c1, beta_value, p2_value, version):
+def a2(x, y, u, v, c1, c2, alpha_value, beta_value, p2_value, version):
     if version == 'aistats':
-        return np.sqrt(8) * p2_value * np.sqrt(loss(x, y, u, v)) * np.linalg.norm(x, ord=2) * np.linalg.norm(x, ord=-2) ** 2 \
+        return np.sqrt(8) * p2_value * np.sqrt(loss(x, y, u, v)) * np.linalg.norm(x, ord=2) \
+               * np.linalg.norm(x, ord=-2) ** 2 \
                + c(x) * beta_value ** 2 * c1 ** 2 * np.linalg.norm(x, ord=-2) ** 4
     else:
-        return np.sqrt(8) * p2_value * np.sqrt(loss(x, y, u, v)) * np.linalg.norm(x, ord=2) * np.linalg.norm(x, ord=-2) ** 2 \
-               + c(x) * beta_value ** 2 * c1 ** 2 * np.linalg.norm(x, ord=-2) ** 4
+        K = np.linalg.norm(x, ord=2) ** 2
+        mu = np.linalg.norm(x, ord=-2) ** 2
+        return mu * (K * c1 * c2 * alpha_value * beta_value + c2 * alpha_value * np.sqrt(2 * K * loss(x, y, u, v)))
 
 
-def a3(x, y, u, v, c1, beta_value, p2_value):
-    return np.sqrt(8) * beta_value * p2_value * c1 * np.sqrt(loss(x, y, u, v)) * np.linalg.norm(x, ord=2) ** 3 * np.linalg.norm(x, ord=-2) ** 2
+def a3(x, y, u, v, c1, c2, alpha_value, beta_value, p2_value, version):
+    if version == 'aistats':
+        return np.sqrt(8) * beta_value * p2_value * c1 * np.sqrt(loss(x, y, u, v)) * np.linalg.norm(x, ord=2) ** 3 \
+               * np.linalg.norm(x, ord=-2) ** 2
+    else:
+        K = np.linalg.norm(x, ord=2) ** 2
+        mu = np.linalg.norm(x, ord=-2) ** 2
+        return 3 * mu * K * c1 * c2 * alpha_value * beta_value * np.sqrt(2 * K * loss(x, y, u, v))
 
 
-def a4(x, y, u, v, p2_value):
-    return 2 * c(x) ** 2 * p2_value ** 2 * loss(x, y, u, v) * np.linalg.norm(x, ord=-2) ** 6
+def a4(x, y, u, v, c2, alpha0, p2_value, version):
+    if version == "aistats":
+        return 2 * c(x) ** 2 * p2_value ** 2 * loss(x, y, u, v) * np.linalg.norm(x, ord=-2) ** 6
+    elif version == 'neurips':
+        K = np.linalg.norm(x, ord=2) ** 2
+        mu = np.linalg.norm(x, ord=-2) ** 2
+        return 6 * mu * K ** 2 * p2_value * c2 * alpha0 * loss(x, y, u, v)
 
 
 def target(eta, x, y, u, v, alpha_value, beta_value, p2_value, c1=1.0, c2=1.0):
