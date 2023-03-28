@@ -105,44 +105,6 @@ def train_over(sig, epochs=50000, repetition=3, random_seed=[1, 2, 3], eta_list=
                 else:
                     eta = eta_list[index][-1]
 
-                # if index == 3:
-                #     # print(loss(x, y, w1_list[index], w2_list[index]))
-                #     alpha_t = np.linalg.norm(w1_list[index], ord=-2) ** 2 \
-                #                  + np.linalg.norm(w2_list[index], ord=-2) ** 2
-                #     beta_t = np.linalg.norm(w1_list[index], ord=2) ** 2 \
-                #                  + np.linalg.norm(w2_list[index], ord=2) ** 2
-                #     p2_t = np.linalg.norm(w1_list[index].dot(w2_list[index]), ord=2)
-                #     print(eta)
-                #     print(a4(x, y, w1_list[index], w2_list[index], p2_t))
-                #     print(a3(x, y, w1_list[index], w2_list[index], 1.0, beta_t, p2_t))
-                #     print(a2(x, y, w1_list[index], w2_list[index], 1.0, beta_t, p2_t))
-                #     print(a1(x, alpha_t, 1.0))
-                #     print(f"alpha={alpha_t}")
-                #     print(f"beta={beta_t}")
-                #     print(target(eta, x, y, w1_list[index], w2_list[index],
-                #                  alpha_t,
-                #                  beta_t,
-                #                  p2_t))
-                #     print('\n')
-                # elif index == 2:
-                #     alpha_t = np.linalg.norm(w1_list[index], ord=-2) ** 2 \
-                #               + np.linalg.norm(w2_list[index], ord=-2) ** 2
-                #     beta_t = np.linalg.norm(w1_list[index], ord=2) ** 2 \
-                #              + np.linalg.norm(w2_list[index], ord=2) ** 2
-                #     p2_t = np.linalg.norm(w1_list[index].dot(w2_list[index]), ord=2)
-                #     print(eta)
-                #     print(a4(x, y, w1_list[index], w2_list[index], p2_t))
-                #     print(a3(x, y, w1_list[index], w2_list[index], 1.0, beta_t, p2_t))
-                #     print(a2(x, y, w1_list[index], w2_list[index], 1.0, beta_t, p2_t))
-                #     print(a1(x, alpha_t, 1.0))
-                #     print(f"alpha={alpha_t}")
-                #     print(f"beta={beta_t}")
-                #     print(target(eta, x, y, w1_list[index], w2_list[index],
-                #                  alpha_t,
-                #                  beta_t,
-                #                  p2_t))
-                #     print('\n')
-
                 loss_monitor_list[index].append(1 / N * loss(x, y, w1_list[index], w2_list[index]))
                 f.write(f"epoch={epoch}, loss={1 / N * loss(x, y, w1_list[index], w2_list[index])}\n")
                 # print(f"epoch={epoch}, loss={1 / N * loss(x, y, w1_list[index], w2_list[index])}")
@@ -171,20 +133,6 @@ def train_over(sig, epochs=50000, repetition=3, random_seed=[1, 2, 3], eta_list=
                                                               beta_t,
                                                               p2(x, y, w1_list[index], w2_list[index])))
                         f2.write(f"epoch={epoch}, ratio={alpha_t/beta_t}\n")
-                        # print(f"epoch={epoch}, bound={new_tight_list[index][-1]}\n")
-                        # print(alpha_t)
-                        # print(beta_t)
-                        # print(target(eta, x, y, w1_list[index], w2_list[index],
-                        #                                       alpha_t,
-                        #                                       beta_t,
-                        #                                       p2(x, y, w1_list[index], w2_list[index])))
-                        # print(target(eta, x, y, w1_list[index], w2_list[index],
-                        #              np.linalg.norm(w1_list[index], ord=-2) ** 2 \
-                        #              + np.linalg.norm(w2_list[index], ord=-2) ** 2,
-                        #              np.linalg.norm(w1_list[index], ord=2) ** 2 \
-                        #              + np.linalg.norm(w2_list[index], ord=2) ** 2,
-                        #                                       np.linalg.norm(w1_list[index].dot(w2_list[index]), ord=2)))
-                        # exit()
 
                     else:
                         r = np.linalg.matrix_rank(x)
@@ -196,23 +144,14 @@ def train_over(sig, epochs=50000, repetition=3, random_seed=[1, 2, 3], eta_list=
                         eigen_v1 = scipy.linalg.eigvals(v1)
                         eigen_v1 = np.real(-np.sort(-eigen_v1))
                         alpha_t = eigen_u1[r - 1] + eigen_v1[m - 1]
-                        beta_t = np.linalg.norm(w1_list[index], ord=2) ** 2 + np.linalg.norm(w2_list[index], ord=2)
+                        beta_t = np.linalg.norm(w1_list[index], ord=2) ** 2 + np.linalg.norm(w2_list[index], ord=2) ** 2
                         p2_t = np.linalg.norm(w1_list[index].dot(w2_list[index]), ord=2)
-                        # alpha_t = np.linalg.norm(w1_list[index], ord=-2) ** 2 \
-                        #           + np.linalg.norm(w2_list[index], ord=-2) ** 2
-                        # beta_t = np.linalg.norm(w1_list[index], ord=2) ** 2 \
-                        #          + np.linalg.norm(w2_list[index], ord=2) ** 2
                         new_tight_list[index].append(new_tight_list[index][-1]
                                                      * target(eta, x, y, w1_list[index], w2_list[index],
                                                               alpha_t,
                                                               beta_t,
                                                               p2_t))
 
-                        # print(f"epoch={epoch}, bound={new_tight_list[index][-1]}\n")
-                        # print(target(eta, x, y, w1_list[index], w2_list[index],
-                        #                                       alpha_t,
-                        #                                       beta_t,
-                        #                                       np.linalg.norm(w1_list[index].dot(w2_list[index]), ord=2)))
                         f2.write(f"epoch={epoch}, ratio={alpha_t / beta_t}\n")
                         f2.write(f"epoch={epoch}, alpha={alpha_t}\n")
                         f2.write(f"epoch={epoch}, beta={beta_t}\n")
