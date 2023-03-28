@@ -135,7 +135,7 @@ def find_lr(x, y, u, v, c1, c2, u_initial, v_initial, version, alpha_0=0.0, beta
         eigen_v1 = scipy.linalg.eigvals(v1)
         eigen_v1 = np.real(-np.sort(-eigen_v1))
         alpha_t = eigen_u1[r-1]+eigen_v1[m-1]
-        beta_t = np.linalg.norm(u, ord=2) ** 2 + np.linalg.norm(v, ord=2)
+        beta_t = np.linalg.norm(u, ord=2) ** 2 + np.linalg.norm(v, ord=2) ** 2
         p2_t = np.linalg.norm(u.dot(v), ord=2)
         roots = np.roots([4 * a4(x, y, u, v, p2_t),
                           3 * a3(x, y, u, v, 1.0, beta_t, p2_t),
